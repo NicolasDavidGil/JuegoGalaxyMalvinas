@@ -1,0 +1,68 @@
+﻿<Window x:Class="GalaxyGame.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GalaxyGame"
+        mc:Ignorable="d"
+        Title="Galaxy Shooter" Height="770" Width="530"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Background="#0D3B66"
+        KeyDown="Window_KeyDown"
+        KeyUp="Window_KeyUp"
+        Loaded="Window_Loaded">
+    <Grid>
+        <Canvas x:Name="GameCanvas" Width="500" Height="700" Background="#1A5276" ClipToBounds="True"/>
+
+        <!-- HUD -->
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,8,0,0" IsHitTestVisible="False">
+            <TextBlock x:Name="ScoreText" Text="Score: 0" Foreground="#00FF88" FontSize="16" FontWeight="Bold" FontFamily="Consolas" Margin="0,0,20,0"/>
+            <TextBlock x:Name="LivesText" Text="Lives: 3" Foreground="#FF4444" FontSize="16" FontWeight="Bold" FontFamily="Consolas" Margin="0,0,20,0"/>
+            <TextBlock x:Name="WaveText" Text="Wave: 1" Foreground="#44AAFF" FontSize="16" FontWeight="Bold" FontFamily="Consolas"/>
+        </StackPanel>
+
+        <!-- Menu Overlay -->
+        <Border x:Name="MenuOverlay" Background="#AA000000" Visibility="Visible">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="🚀 GALAXY SHOOTER 🚀" Foreground="#00FF88" FontSize="36" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                <TextBlock Text="← → Mover nave" Foreground="White" FontSize="16" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                <TextBlock Text="ESPACIO  Disparar" Foreground="White" FontSize="16" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                <TextBlock Text="Nombre del jugador:" Foreground="White" FontSize="16" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                <TextBox x:Name="PlayerNameInput" Width="250" FontSize="16" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,15" MaxLength="20" Text="Player" HorizontalContentAlignment="Center"/>
+                <TextBlock Text="Presiona ENTER para comenzar" Foreground="Yellow" FontSize="18" FontFamily="Consolas" HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Pause Overlay -->
+        <Border x:Name="PauseOverlay" Background="#AA000000" Visibility="Collapsed">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="⏸ PAUSA" Foreground="#44AAFF" FontSize="42" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,30"/>
+                <Button x:Name="BtnContinuar" Content="Continuar" Click="BtnContinuar_Click" Width="220" Height="45" FontSize="20" FontFamily="Consolas" FontWeight="Bold" Foreground="White" Background="#44AA44" BorderBrush="#66CC66" BorderThickness="2" Cursor="Hand" Margin="0,0,0,12"/>
+                <Button x:Name="BtnReiniciar" Content="Reiniciar" Click="BtnReiniciar_Click" Width="220" Height="45" FontSize="20" FontFamily="Consolas" FontWeight="Bold" Foreground="White" Background="#CC8800" BorderBrush="#EEAA22" BorderThickness="2" Cursor="Hand" Margin="0,0,0,12"/>
+                <Button x:Name="BtnSalir" Content="Salir" Click="BtnSalir_Click" Width="220" Height="45" FontSize="20" FontFamily="Consolas" FontWeight="Bold" Foreground="White" Background="#CC3333" BorderBrush="#EE5555" BorderThickness="2" Cursor="Hand"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Game Over Overlay -->
+        <Border x:Name="GameOverOverlay" Background="#AA000000" Visibility="Collapsed">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="GAME OVER" Foreground="#FF4444" FontSize="42" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                <TextBlock x:Name="FinalScoreText" Text="Score: 0" Foreground="#00FF88" FontSize="24" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                <TextBlock Text="🏆 TOP 10 🏆" Foreground="Gold" FontSize="18" FontWeight="Bold" FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                <ItemsControl x:Name="HighScoresList" HorizontalAlignment="Center" Margin="0,0,0,15">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding Rank}" Foreground="Gold" FontSize="14" FontFamily="Consolas" Width="30"/>
+                                <TextBlock Text="{Binding PlayerName}" Foreground="White" FontSize="14" FontFamily="Consolas" Width="160"/>
+                                <TextBlock Text="{Binding Score}" Foreground="#00FF88" FontSize="14" FontFamily="Consolas" Width="80" TextAlignment="Right"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="Presiona ENTER para reiniciar" Foreground="Yellow" FontSize="18" FontFamily="Consolas" HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

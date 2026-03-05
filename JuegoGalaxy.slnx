@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="GalaxyGame.Engine/GalaxyGame.Engine.csproj" />
+  <Project Path="GalaxyGame/GalaxyGame.csproj" />
+</Solution>
