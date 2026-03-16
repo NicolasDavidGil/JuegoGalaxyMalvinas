@@ -1,3 +1,4 @@
+
 using GalaxyGame.Engine.Models;
 
 namespace GalaxyGame.Engine;
@@ -21,6 +22,8 @@ public class GalaxyGameEngine
     public List<Star> Stars { get; } = [];
     public List<IslandPatch> Islands { get; } = [];
     public List<Effect> Effects { get; } = [];
+    public List<Ship> Ships { get; } = [];
+    public List<Bomb> PlayerBombs { get; } = [];
     public GameState State { get; set; } = GameState.Menu;
 
     public double AreaWidth { get; set; } = 500;
@@ -33,6 +36,8 @@ public class GalaxyGameEngine
     private int _enemiesSpawnedInWave;
     private int _enemiesPerWave = 6;
     private double _islandSpawnTimer;
+    private double _shipSpawnTimer;
+    private double _bombCooldown;
 
     public void StartGame()
     {
@@ -47,12 +52,16 @@ public class GalaxyGameEngine
         PlayerBullets.Clear();
         EnemyBullets.Clear();
         Effects.Clear();
+        Ships.Clear();
+        PlayerBombs.Clear();
 
         Wave = 1;
         _enemySpawnTimer = 0;
         _enemySpawnInterval = 1.5;
         _enemiesSpawnedInWave = 0;
         _enemiesPerWave = 6;
+        _shipSpawnTimer = 5.0 + _random.NextDouble() * 5.0;
+        _bombCooldown = 0;
 
         InitStars();
         InitIslands();
@@ -116,16 +125,19 @@ public class GalaxyGameEngine
         }
     }
 
-    public void Update(double deltaTime, bool moveLeft, bool moveRight, bool shooting)
+    public void Update(double deltaTime, bool moveLeft, bool moveRight, bool shooting, bool bombing = false)
     {
         if (State != GameState.Playing) return;
 
         UpdateStars(deltaTime);
         UpdateIslands(deltaTime);
-        UpdatePlayer(deltaTime, moveLeft, moveRight, shooting);
+        UpdatePlayer(deltaTime, moveLeft, moveRight, shooting, bombing);
         UpdateBullets(deltaTime);
+        UpdateBombs(deltaTime);
         SpawnEnemies(deltaTime);
         UpdateEnemies(deltaTime);
+        SpawnShips(deltaTime);
+        UpdateShips(deltaTime);
         CheckCollisions();
         CleanupDead();
         UpdateEffects(deltaTime);
@@ -145,7 +157,7 @@ public class GalaxyGameEngine
         }
     }
 
-    private void UpdatePlayer(double deltaTime, bool moveLeft, bool moveRight, bool shooting)
+    private void UpdatePlayer(double deltaTime, bool moveLeft, bool moveRight, bool shooting, bool bombing)
     {
         double speed = Player.Speed * 60 * deltaTime;
 
@@ -165,6 +177,19 @@ public class GalaxyGameEngine
             });
             Player.ShootCooldown = 0.2;
         }
+
+        // Soltar bomba hacia abajo
+        _bombCooldown -= deltaTime;
+        if (bombing && _bombCooldown <= 0)
+        {
+            PlayerBombs.Add(new Bomb
+            {
+                X = Player.X + Player.Width / 2 - 5,
+                Y = Player.Y + Player.Height,
+                SpeedY = 4.0
+            });
+            _bombCooldown = 0.5;
+        }
     }
 
     private void UpdateBullets(double deltaTime)
@@ -179,6 +204,15 @@ public class GalaxyGameEngine
         {
             bullet.Y += bullet.SpeedY * 60 * deltaTime;
             if (bullet.Y > AreaHeight + 20) bullet.IsAlive = false;
+        }
+    }
+
+    private void UpdateBombs(double deltaTime)
+    {
+        foreach (var bomb in PlayerBombs)
+        {
+            bomb.Y += bomb.SpeedY * 60 * deltaTime;
+            if (bomb.Y > AreaHeight + 20) bomb.IsAlive = false;
         }
     }
 
@@ -202,6 +236,32 @@ public class GalaxyGameEngine
             _enemiesSpawnedInWave++;
             _enemySpawnTimer = _enemySpawnInterval;
         }
+    }
+
+    private void SpawnShips(double deltaTime)
+    {
+        _shipSpawnTimer -= deltaTime;
+        if (_shipSpawnTimer <= 0)
+        {
+            double y = AreaHeight * 0.35 + _random.NextDouble() * (AreaHeight * 0.4);
+            double x = 20 + _random.NextDouble() * (AreaWidth - 120);
+            var ship = new Ship
+            {
+                X = x,
+                Y = y,
+                SpeedX = 0,
+                Health = 3,
+                MaxHealth = 3,
+                Points = 500 + (Wave - 1) * 50
+            };
+            Ships.Add(ship);
+            _shipSpawnTimer = 8.0 + _random.NextDouble() * 10.0;
+        }
+    }
+
+    private void UpdateShips(double deltaTime)
+    {
+        // Los barcos permanecen estáticos en el agua
     }
 
     private void UpdateEnemies(double deltaTime)
@@ -251,6 +311,47 @@ public class GalaxyGameEngine
                         Duration = 0.5,
                         TimeLeft = 0.5
                     });
+                }
+            }
+        }
+
+        // Bombas del jugador vs barcos
+        foreach (var bomb in PlayerBombs)
+        {
+            foreach (var ship in Ships)
+            {
+                if (bomb.CollidesWith(ship))
+                {
+                    bomb.IsAlive = false;
+                    ship.Health--;
+
+                    if (ship.Health <= 0)
+                    {
+                        ship.IsAlive = false;
+                        Player.Score += ship.Points;
+                        Effects.Add(new Effect
+                        {
+                            X = ship.X + ship.Width / 2,
+                            Y = ship.Y + ship.Height / 2,
+                            Size = Math.Max(ship.Width, ship.Height) * 2.0,
+                            Type = EffectType.Explosion,
+                            Duration = 0.8,
+                            TimeLeft = 0.8
+                        });
+                    }
+                    else
+                    {
+                        // Impacto parcial en el barco
+                        Effects.Add(new Effect
+                        {
+                            X = bomb.X + bomb.Width / 2,
+                            Y = bomb.Y + bomb.Height / 2,
+                            Size = 20,
+                            Type = EffectType.Impact,
+                            Duration = 0.3,
+                            TimeLeft = 0.3
+                        });
+                    }
                 }
             }
         }
@@ -342,6 +443,8 @@ public class GalaxyGameEngine
         PlayerBullets.RemoveAll(b => !b.IsAlive);
         EnemyBullets.RemoveAll(b => !b.IsAlive);
         Enemies.RemoveAll(e => !e.IsAlive);
+        Ships.RemoveAll(s => !s.IsAlive);
+        PlayerBombs.RemoveAll(b => !b.IsAlive);
     }
 
     private void UpdateEffects(double deltaTime)

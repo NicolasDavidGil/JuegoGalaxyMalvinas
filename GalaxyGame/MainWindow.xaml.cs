@@ -33,6 +33,13 @@ public partial class MainWindow : Window
     private static readonly Brush IslandDetailBrush = new SolidColorBrush(Color.FromRgb(110, 145, 65));
     private static readonly Brush ShoreBrush = new SolidColorBrush(Color.FromRgb(210, 190, 140));
     private static readonly Brush FoamBrush = new SolidColorBrush(Color.FromRgb(200, 225, 240));
+    private static readonly Brush ShipHullBrush = new SolidColorBrush(Color.FromRgb(100, 100, 110));
+    private static readonly Brush ShipDeckBrush = new SolidColorBrush(Color.FromRgb(130, 130, 140));
+    private static readonly Brush ShipDetailBrush = new SolidColorBrush(Color.FromRgb(70, 70, 80));
+    private static readonly Brush BombBrush = new SolidColorBrush(Color.FromRgb(255, 80, 80));
+    private static readonly Brush BombFinBrush = new SolidColorBrush(Color.FromRgb(180, 60, 60));
+    private static readonly Brush ShipHealthBg = new SolidColorBrush(Color.FromRgb(60, 60, 60));
+    private static readonly Brush ShipHealthFg = new SolidColorBrush(Color.FromRgb(50, 220, 50));
 
     public MainWindow()
     {
@@ -105,8 +112,9 @@ public partial class MainWindow : Window
         bool left = _pressedKeys.Contains(Key.Left) || _pressedKeys.Contains(Key.A);
         bool right = _pressedKeys.Contains(Key.Right) || _pressedKeys.Contains(Key.D);
         bool shoot = _pressedKeys.Contains(Key.Space);
+        bool bomb = _pressedKeys.Contains(Key.B) || _pressedKeys.Contains(Key.Down) || _pressedKeys.Contains(Key.S);
 
-        _engine.Update(delta, left, right, shoot);
+        _engine.Update(delta, left, right, shoot, bomb);
         Render();
 
         // Actualizar HUD
@@ -204,10 +212,22 @@ public partial class MainWindow : Window
         if (_engine.Player.IsAlive)
             DrawPlayer(_engine.Player);
 
+        // Barcos
+        foreach (var ship in _engine.Ships)
+        {
+            DrawShip(ship);
+        }
+
         // Enemigos
         foreach (var enemy in _engine.Enemies)
         {
             DrawEnemy(enemy);
+        }
+
+        // Bombas del jugador
+        foreach (var bomb in _engine.PlayerBombs)
+        {
+            DrawBomb(bomb);
         }
 
         // Balas del jugador
@@ -629,5 +649,126 @@ public partial class MainWindow : Window
         Canvas.SetLeft(cockpit, enemy.X + w * 0.50 - 2.5);
         Canvas.SetTop(cockpit, enemy.Y + h * 0.62);
         GameCanvas.Children.Add(cockpit);
+    }
+
+    private void DrawShip(Ship ship)
+    {
+        double w = ship.Width, h = ship.Height;
+
+        // Casco del barco (forma de barco visto desde arriba)
+        var hullPoints = ship.SpeedX >= 0
+            ? new PointCollection
+            {
+                new Point(w * 0.10, h * 0.30),
+                new Point(w * 0.05, h * 0.50),
+                new Point(w * 0.10, h * 0.70),
+                new Point(w * 0.90, h * 0.70),
+                new Point(w * 0.95, h * 0.50),
+                new Point(w * 0.90, h * 0.30),
+                new Point(w * 0.50, h * 0.05)
+            }
+            : new PointCollection
+            {
+                new Point(w * 0.10, h * 0.30),
+                new Point(w * 0.05, h * 0.50),
+                new Point(w * 0.10, h * 0.70),
+                new Point(w * 0.90, h * 0.70),
+                new Point(w * 0.95, h * 0.50),
+                new Point(w * 0.90, h * 0.30),
+                new Point(w * 0.50, h * 0.95)
+            };
+
+        var hull = new Polygon
+        {
+            Points = hullPoints,
+            Fill = ShipHullBrush
+        };
+        Canvas.SetLeft(hull, ship.X);
+        Canvas.SetTop(hull, ship.Y);
+        GameCanvas.Children.Add(hull);
+
+        // Cubierta
+        var deck = new Rectangle
+        {
+            Width = w * 0.50,
+            Height = h * 0.30,
+            Fill = ShipDeckBrush,
+            RadiusX = 2,
+            RadiusY = 2
+        };
+        Canvas.SetLeft(deck, ship.X + w * 0.25);
+        Canvas.SetTop(deck, ship.Y + h * 0.35);
+        GameCanvas.Children.Add(deck);
+
+        // Torre / superestructura
+        var tower = new Rectangle
+        {
+            Width = w * 0.15,
+            Height = h * 0.20,
+            Fill = ShipDetailBrush
+        };
+        Canvas.SetLeft(tower, ship.X + w * 0.42);
+        Canvas.SetTop(tower, ship.Y + h * 0.40);
+        GameCanvas.Children.Add(tower);
+
+        // Barra de vida
+        double barWidth = w * 0.6;
+        double barHeight = 4;
+        double barX = ship.X + (w - barWidth) / 2;
+        double barY = ship.Y - 8;
+
+        var bgBar = new Rectangle
+        {
+            Width = barWidth,
+            Height = barHeight,
+            Fill = ShipHealthBg,
+            RadiusX = 1,
+            RadiusY = 1
+        };
+        Canvas.SetLeft(bgBar, barX);
+        Canvas.SetTop(bgBar, barY);
+        GameCanvas.Children.Add(bgBar);
+
+        double healthRatio = (double)ship.Health / ship.MaxHealth;
+        var fgBar = new Rectangle
+        {
+            Width = barWidth * healthRatio,
+            Height = barHeight,
+            Fill = ShipHealthFg,
+            RadiusX = 1,
+            RadiusY = 1
+        };
+        Canvas.SetLeft(fgBar, barX);
+        Canvas.SetTop(fgBar, barY);
+        GameCanvas.Children.Add(fgBar);
+    }
+
+    private void DrawBomb(Bomb bomb)
+    {
+        // Cuerpo de la bomba (elipse)
+        var body = new Ellipse
+        {
+            Width = bomb.Width,
+            Height = bomb.Height,
+            Fill = BombBrush
+        };
+        Canvas.SetLeft(body, bomb.X);
+        Canvas.SetTop(body, bomb.Y);
+        GameCanvas.Children.Add(body);
+
+        // Aletas traseras
+        var fins = new Polygon
+        {
+            Points =
+            [
+                new Point(bomb.Width / 2, 0),
+                new Point(0, -5),
+                new Point(bomb.Width, -5)
+            ],
+            Fill = BombFinBrush
+        };
+        Canvas.SetLeft(fins, bomb.X);
+        Canvas.SetTop(fins, bomb.Y);
+        GameCanvas.Children.Add(fins);
     }
 }
